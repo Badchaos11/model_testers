@@ -344,7 +344,7 @@ class FamaFrenchFive:
             peak_index = cumprod_ret.loc[:trough_index].idxmax()
             maximum_drawdown = 100 * (cumprod_ret[trough_index] - cumprod_ret[peak_index]) / cumprod_ret[peak_index]
             """
-
+            print('**Результат для весов по Келли**')
             print('********************************')
             print('Первоначальная стоимость портфеля', round(first_sum_portfolio))
             print('Текущая стоимость портфеля', round(current_sum_portfolio))

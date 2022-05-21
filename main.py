@@ -7,4 +7,4 @@ if __name__ == "__main__":
     bt = 'QQQ'
     tst = FamaFrenchFive(assets=assets, benchmark_ticker=bt, lookback=lkb,
                          max_size=0.35, min_size=0)
-    tst.portfolio_calculate('Kelly')
+    tst.calculate_weights()
