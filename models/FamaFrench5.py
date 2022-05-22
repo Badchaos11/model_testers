@@ -1,23 +1,20 @@
-import cvxopt.coneprog
-import pandas as pd
-import yfinance as yf
-import numpy as np
-import empyrical as ep
-import statsmodels.api as sm
-import json
-import argparse
 import datetime
-import matplotlib.pyplot as plt
-import statsmodels.stats.moment_helpers as mh
 import sys
-import json
-from cvxopt.solvers import qp
+
+import cvxopt.coneprog
+import empyrical as ep
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.stats.moment_helpers as mh
+import yfinance as yf
 from cvxopt import matrix
-from joblib import Memory
+from cvxopt.solvers import qp
 from pandas_datareader import data as pd_data
+from pypfopt import BlackLittermanModel
+from pypfopt import EfficientFrontier, CLA
 from pypfopt import black_litterman, risk_models
-from pypfopt import BlackLittermanModel, plotting
-from pypfopt import EfficientFrontier, objective_functions, CLA
 
 pd.options.mode.chained_assignment = None
 
@@ -25,7 +22,7 @@ pd.options.mode.chained_assignment = None
 class FamaFrenchFive:
 
     def __init__(self, assets: list, benchmark_ticker: str, lookback: int, max_size: float, min_size: float,
-                 test_year="2021-12-31", risk_free=0.008, budget=2e5, n_iterations=20):
+                 test_year="2021-12-31", opt_delta=1, risk_free=0.008, budget=2e5, n_iterations=20, plot_res=False):
         self.__tickers = sorted(assets)
         self.__benchmark_ticker = benchmark_ticker
         self.__lookback = lookback
@@ -33,7 +30,9 @@ class FamaFrenchFive:
         self.__min_size = min_size
         self.__risk_free = risk_free
         self.__test_year = test_year
+        self.__opt_delta = opt_delta
         self.__budget = budget
+        self.__plot_res = plot_res
         self.__currencies = ['CADUSD=X', 'AUDUSD=X', 'TRYUSD=X', 'CHFUSD=X', 'MYRUSD=X', 'MXNUSD=X',
                              'GBPUSD=X', 'SGDUSD=X', 'HKDUSD=X', 'ZARUSD=X', 'ILSUSD=X', 'JPYUSD=X',
                              'RUBUSD=X', 'EURUSD=X']
@@ -161,6 +160,7 @@ class FamaFrenchFive:
         covar_bl = bl.bl_cov()
         self.__rets_bl = rets_bl
         self.__covar_bl = covar_bl
+        self.__market_prior = market_prior
 
     def __kelly_optimise(self):
         M = self.__rets_bl.to_numpy()
@@ -213,23 +213,16 @@ class FamaFrenchFive:
             sigmas.append(sigma)
             deltas.append(delta)
             weights.append(weights_vec)
-        '''
-        fig, ax = plt.subplots()
-        ax.plot(sigmas, returns)
-        for i, delta in enumerate(deltas):
-            ax.annotate(str(delta), (sigmas[i], returns[i]))
-        plt.xlabel('Volatility (%) ')
-        plt.ylabel('Returns (%)')
-        plt.title('Efficient Frontier for Max Quadratic Utility Optimization')
-        plt.show()
-        '''
-        opt_delta = float(input('Enter the desired point on the efficient frontier: '))
+        #opt_delta = float(input('Enter the desired point on the efficient frontier: '))
         ef = EfficientFrontier(self.__rets_bl, self.__covar_bl,
                                weight_bounds=(self.__min_size, self.__max_size))
-        ef.max_quadratic_utility(opt_delta)
+        ef.max_quadratic_utility(self.__opt_delta)
         opt_weights = ef.clean_weights()
         opt_weights = pd.DataFrame.from_dict(opt_weights, orient='index')
         opt_weights.columns = ['Max Quad Util']
+        self.__sigmas = sigmas
+        self.__deltas = deltas
+        self.__returns = returns
         return opt_weights, ef
 
     def __min_volatility_weights(self):
@@ -268,6 +261,46 @@ class FamaFrenchFive:
         weights.columns = ['CLA Min Vol']
         return weights, cla
 
+    def __plot_heatmap(self, df, title, x_label, y_label):
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(bottom=0.25, left=0.25)
+        heatmap = ax.pcolor(df, edgecolors='w', linewidths=1)
+        cbar = plt.colorbar(heatmap)
+        ax.set_xticks(np.arange(df.shape[1]) + 0.5, minor=False)
+        ax.set_yticks(np.arange(df.shape[0]) + 0.5, minor=False)
+        ax.set_xticklabels(df.columns)  # , rotation=45)
+        ax.set_yticklabels(df.index)
+
+        for y, idx in enumerate(df.index):
+            for x, col in enumerate(df.columns):
+                plt.text(x + 0.5, y + 0.5, '%.2f' % df.loc[idx, col], horizontalalignment='center',
+                         verticalalignment='center', )
+
+        plt.gca().invert_yaxis()
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.show()
+
+    def __plot_max_quad_r(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.__sigmas, self.__returns)
+        for i, delta in enumerate(self.__deltas):
+            ax.annotate(str(delta), (self.__sigmas[i], self.__returns[i]))
+        plt.xlabel('Volatility (%) ')
+        plt.ylabel('Returns (%)')
+        plt.title('Efficient Frontier for Max Quadratic Utility Optimization')
+        plt.show()
+
+    def __plot_black_litterman(self):
+        rets_df = pd.DataFrame([self.__market_prior, self.__rets_bl, pd.Series(self.__mu)],
+                               index=["Prior", "Posterior", "Views"]).T
+        rets_df.plot.bar(figsize=(12, 8), title='Black-Litterman Expected Returns');
+        self.__plot_heatmap(self.__covar_bl, 'Black-Litterman Covariance', '', '')
+        corr_bl = mh.cov2corr(self.__covar_bl)
+        corr_bl = pd.DataFrame(corr_bl, index=self.__covar_bl.index, columns=self.__covar_bl.columns)
+        self.__plot_heatmap(corr_bl, 'Black-Litterman Correlation', '', '')
+
     def calculate_weights(self):
         print('Начинаю расчитывать веса для портфеля')
         print('Загружаю данные')
@@ -296,6 +329,14 @@ class FamaFrenchFive:
         weights_df = pd.merge(weights_df, min_vol_w, left_index=True, right_index=True)
         weights_df = pd.merge(weights_df, cla_min_vol_w, left_index=True, right_index=True)
         weights_df.to_csv('models/portfolio_weight_results.csv')
+
+        if self.__plot_res:
+            print('Построение графиков')
+            self.__plot_heatmap(weights_df, 'Portfolio Weighting (%)', 'Optimization Method', 'Security')
+            self.__plot_black_litterman()
+            self.__plot_max_quad_r()
+        print('Расчёт окончен. Можно переходить к анализу')
+        print('******************************')
 
         self.__weights = weights_df
 
