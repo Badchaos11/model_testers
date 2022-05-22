@@ -26,6 +26,14 @@ if __name__ == "__main__":
         budget - бюджет портфеля, по умолчанию 200000 USD.
         n_iterations - число итераций при нахождении весов по критерию Келли. Слишком большое значение может привести
                        к ошибке и прекращению работы программы, не рекомендуется больше 30, по умолчанию 20.
+                       
+        В версии 1.0 доступны 2 функции.
+        calculate_weights - расчёт весов всеми доступными способами, резултат записывается в файл 
+                            portfolio_weight_results.csv
+        portfolio_calculate - расчёт доходности портфеля и некоторых параметров для оценки его эффективности. 
+                              Для сравнения с портфелем аналогичные расчёты проводятся для индекса.
+                              Доступные значения переменной weight_type: 
+                              Kelly, Max Quad Util, Max Sharpe, CLA Max Sharpe ,Min Vol ,CLA Min Vol
     """
     assets = ['INTU', 'TXN', 'NTES', 'AEP', 'LRCX', 'PEP', 'AMAT', 'TSLA', 'CTAS', 'TCOM', 'EBAY', 'GOOG']
     lkb = 2
@@ -34,4 +42,3 @@ if __name__ == "__main__":
                          max_size=0.35, min_size=0)
     tst.calculate_weights()
     tst.portfolio_calculate('Kelly')
-
