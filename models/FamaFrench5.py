@@ -15,6 +15,8 @@ from pandas_datareader import data as pd_data
 from pypfopt import BlackLittermanModel
 from pypfopt import EfficientFrontier, CLA
 from pypfopt import black_litterman, risk_models
+from pypfopt.exceptions import OptimizationError
+
 
 pd.options.mode.chained_assignment = None
 
@@ -22,7 +24,7 @@ pd.options.mode.chained_assignment = None
 class FamaFrenchFive:
 
     def __init__(self, assets: list, benchmark_ticker: str, lookback: int, max_size: float, min_size: float,
-                 test_year="2021-12-31", opt_delta=1, risk_free=0.008, budget=2e5, n_iterations=20, plot_res=False):
+                 test_year=2021, opt_delta=1, risk_free=0, budget=2e5, n_iterations=5, plot_res=False):
         self.__tickers = sorted(assets)
         self.__benchmark_ticker = benchmark_ticker
         self.__lookback = lookback
@@ -39,15 +41,17 @@ class FamaFrenchFive:
         cvxopt.coneprog.options = {'maxiters': n_iterations}
 
     def __load_prices(self):
-        ty = datetime.datetime.strptime(self.__test_year, "%Y-%m-%d").date()
-        ed = ty - datetime.timedelta(days=365)
-        st = ed - datetime.timedelta(days=356 * self.__lookback)
+        #ty = datetime.datetime.strptime(self.__test_year, "%Y-%m-%d").date()
+        ed = str(self.__test_year - 1) + '-12-30'
+        st = str(self.__test_year - self.__lookback) + '-01-01'
         data = yf.download(self.__tickers, st, ed)['Close'].dropna()
 
         self.__data = data
 
     def __load_market_price(self):
-        market_prices = yf.download("SPY", period="max")["Adj Close"]
+        market_prices = yf.download("QQQ", period="max")["Adj Close"]
+        ed = str(self.__test_year - 1) + '-12-30'
+        market_prices = market_prices[:ed]
         self.__market_prices = market_prices
 
     def __load_mkt_caps(self):
@@ -88,19 +92,29 @@ class FamaFrenchFive:
 
     def __calc_quantity(self, weight_type):
         wgts = pd.read_csv('models/portfolio_weight_results.csv')
+        print(wgts)
         wgts = wgts[weight_type]
+        print(wgts)
         weighted_budget = [self.__budget * wgts[i] for i in range(len(wgts))]
+        print(weighted_budget)
         return weighted_budget
 
     def __count_fama(self):
 
-        df = self.__data.pct_change().dropna()
+        ed = str(self.__test_year - 1) + '-12-30'
+        st = str(self.__test_year - self.__lookback) + '-01-01'
+
+        dat = self.__data.copy()
+        data_bench = yf.download(self.__benchmark_ticker, st, ed)['Close']
+
+        data = dat.pct_change().dropna()
+        bench = data_bench.pct_change().dropna()
 
         ff_ratios = pd.read_excel("models/F-F_Research_Data_5_Factors_2x3_daily.xlsx")
         ff_ratios['Date'] = pd.to_datetime(ff_ratios['Unnamed: 0'], format='%Y%m%d')
         ff_ratios = ff_ratios.set_index('Date')
         ff_ratios = ff_ratios.drop(columns=['Unnamed: 0'])
-        ff_ratios = ff_ratios.loc[df.index[0]: df.index[-1]]
+        ff_ratios = ff_ratios.loc[data.index[0]: data.index[-1]]
         for i in range(len(ff_ratios)):
             ff_ratios['Mkt-RF'][i] = float(ff_ratios['Mkt-RF'][i][:-1])
             ff_ratios['SMB'][i] = float(ff_ratios['SMB'][i][:-1])
@@ -108,44 +122,64 @@ class FamaFrenchFive:
             ff_ratios['RMW'][i] = float(ff_ratios['RMW'][i][:-1])
             ff_ratios['CMA'][i] = float(ff_ratios['CMA'][i][:-1])
 
-        dd = pd.read_csv("models/F-F_Research_Data_5_Factors_2x3.csv")
-        ed = -1 * self.__lookback - 1
-        dd = dd.iloc[ed:-1]
-        dd = dd.drop("Unnamed: 0", axis=1)
+        bench_df = pd.DataFrame()
+        bench_df['Benchmark'] = bench
+
+        tiker_with_factors = ff_ratios.merge(data, how='right', on=['Date']).bfill(axis='rows')
+
+        pre_Y = bench_df.merge(tiker_with_factors, how='right', on=['Date']).bfill(axis='rows')
+
+        pre_Y['Mkt-RF'] = (pre_Y['Benchmark'] - pre_Y['RF']) * 100
+        X = pre_Y[['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA']] / 100  # Mkt-RF =  Benchmark - RF
+
+        Y = data
+        print('Треню модель')
+        # Create a regression model
+        reg = sm.OLS(Y.astype(float), X.astype(float)).fit()
+
+        regression_df = reg.params
+        regression_df = regression_df.T
+        regression_df['Tickers'] = data.columns.tolist()
+        regression_df = regression_df.set_index('Tickers')
+        regression_df = regression_df.T
+
+        research_data_per_year = pd.read_csv('models/F-F_Research_Data_5_Factors_2x3.csv')
+        research_data_per_year = research_data_per_year.rename({'Unnamed: 0': 'Date'}, axis=1)
+        research_data_per_year['Date'] = research_data_per_year['Date'].astype('str')
+        research_data_per_year = research_data_per_year.set_index('Date') / 100
 
         low = []
         mid = []
         high = []
         tik = []
-        X = ff_ratios.drop('RF', axis=1)
 
-        for i, ticker in enumerate(self.__tickers):
+        bench_year_return = (data_bench[-1] - data_bench[0]) / data_bench[0]
+
+        for company in regression_df.columns.tolist():
+            calk_df = regression_df[company]
+            table_data_year = research_data_per_year.loc[str(self.__test_year - 1)]
             try:
-                y = df[ticker]
-                reg = sm.OLS(y, X.astype(float)).fit()
+                mid_pref = calk_df['Mkt-RF'] * bench_year_return + calk_df['SMB'] * table_data_year['SMB'] + calk_df[
+                    'HML'] * table_data_year['HML'] + \
+                           calk_df['RMW'] * table_data_year['RMW'] + calk_df['CMA'] * table_data_year['CMA']
 
-                mid_pref = dd['RF'].mean() / 100 + reg.params[0] * dd["Mkt-RF"].mean() / 100 \
-                           + reg.params[1] * dd['SMB'].mean() / 100 \
-                           + reg.params[2] * dd['HML'].mean() / 100 \
-                           + reg.params[3] * dd['RMW'].mean() / 100 \
-                           + reg.params[4] * dd['CMA'].mean() / 100
                 mid.append(mid_pref)
-                low.append(mid_pref - df[self.__tickers[i]].std())
-                high.append(mid_pref + df[self.__tickers[i]].std())
-                tik.append(self.__tickers[i])
+                low.append(mid_pref - pre_Y[company].std())
+                high.append(mid_pref + pre_Y[company].std())
+                tik.append(company)
             except:
                 mid.append(0)
                 low.append(0)
                 high.append(0)
-                tik.append(self.__tickers[i])
+                tik.append(company)
 
-        df = pd.DataFrame()
-        df['ticker'] = tik
-        df['low_pred_ret'] = low
-        df['pred_ret'] = mid
-        df['hig_pred_ret'] = high
+        daa = pd.DataFrame()
+        daa['ticker'] = tik
+        daa['low_pred_ret'] = low
+        daa['pred_ret'] = mid
+        daa['hig_pred_ret'] = high
 
-        out = df.set_index('ticker').T.to_dict('list')
+        out = daa.set_index('ticker').T.to_dict('list')
         self.__views = out
 
     def __calculate_black_litterman(self):
@@ -158,6 +192,7 @@ class FamaFrenchFive:
                                  absolute_views=self.__mu, omega=self.__omega)
         rets_bl = bl.bl_returns()
         covar_bl = bl.bl_cov()
+
         self.__rets_bl = rets_bl
         self.__covar_bl = covar_bl
         self.__market_prior = market_prior
@@ -174,11 +209,11 @@ class FamaFrenchFive:
         h = matrix(0.0, (n, 1))
 
         try:
-            max_pos_size = self.__min_size
+            max_pos_size = float(self.__min_size)
         except KeyError:
             max_pos_size = None
         try:
-            min_pos_size = self.__max_size
+            min_pos_size = float(self.__max_size)
         except KeyError:
             min_pos_size = None
         if min_pos_size is not None:
@@ -261,7 +296,8 @@ class FamaFrenchFive:
         weights.columns = ['CLA Min Vol']
         return weights, cla
 
-    def __plot_heatmap(self, df, title, x_label, y_label):
+    @staticmethod
+    def __plot_heatmap(df, title, x_label, y_label):
         fig, ax = plt.subplots()
         fig.subplots_adjust(bottom=0.25, left=0.25)
         heatmap = ax.pcolor(df, edgecolors='w', linewidths=1)
@@ -305,8 +341,10 @@ class FamaFrenchFive:
         print('Начинаю расчитывать веса для портфеля')
         print('Загружаю данные')
         self.__load_full_data()
+        print(self.__data)
         print('Рассчитываю модель Фама-Френча с 5 параметрами')
         self.__count_fama()
+        print(self.__views)
         self.__load_mean_views()
         print('Рассчитыаю модель Блэка-Литтермана')
         self.__calculate_black_litterman()
@@ -317,14 +355,20 @@ class FamaFrenchFive:
         print('Расчёт для минимальной волатильности')
         min_vol_w, min_vol_ef = self.__min_volatility_weights()
         print('Расчёт для максимальногео рейтинга Шарпа')
-        max_sharpe_w, max_sharpe_ef = self.__max_sharpe_weights()
+        try:
+            max_sharpe_w, max_sharpe_ef = self.__max_sharpe_weights()
+        except OptimizationError:
+            pass
         print('Расчет для максимального рейтинга Шарпа по CLA')
         cla_max_sharpe_w, cla_max_sharpe_cla = self.__cla_max_sharpe_weights()
         print('Расчёт для минимальной волатильности по CLA')
         cla_min_vol_w, cla_min_vol_cla = self.__cla_min_vol_weights()
         print('Заполнение весов')
         weights_df = pd.merge(kelly_w, max_quad_util_w, left_index=True, right_index=True)
-        weights_df = pd.merge(weights_df, max_sharpe_w, left_index=True, right_index=True)
+        try:
+            weights_df = pd.merge(weights_df, max_sharpe_w, left_index=True, right_index=True)
+        except:
+            pass
         weights_df = pd.merge(weights_df, cla_max_sharpe_w, left_index=True, right_index=True)
         weights_df = pd.merge(weights_df, min_vol_w, left_index=True, right_index=True)
         weights_df = pd.merge(weights_df, cla_min_vol_w, left_index=True, right_index=True)
@@ -337,24 +381,30 @@ class FamaFrenchFive:
             self.__plot_max_quad_r()
         print('Расчёт окончен. Можно переходить к анализу')
         print('******************************')
-
         self.__weights = weights_df
 
     def portfolio_calculate(self, weights_type: str):
-        ed = datetime.datetime.strptime(self.__test_year, "%Y-%m-%d")
-        st = ed - datetime.timedelta(days=365)
+        ed = str(self.__test_year) + '-12-30'
+        st = str(self.__test_year) + '-01-01'
         df = yf.download(self.__tickers, st, ed, progress=False)['Close'].fillna(0)
+        print(df)
         index_df = yf.download(self.__benchmark_ticker, st, ed, progress=False)['Close'].fillna(0)
         try:
             b = self.__calc_quantity(weights_type)
             cum_benchmark_returns = index_df.pct_change().dropna().cumsum()
-            portfolio_returns = df.pct_change().dropna()
+            for_pr = pd.DataFrame()
+            for i, name in enumerate(self.__tickers):
+                if b[i] != 0:
+                    for_pr[name] = df[name]
+            print(for_pr)
+            portfolio_returns = for_pr.pct_change().dropna()
             portfolio_returns = portfolio_returns.mean(axis=1)
             index_returns = index_df.pct_change().dropna()
 
             first_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[2]))
             current_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[-1]))
             growth_portfolio = (current_sum_portfolio - first_sum_portfolio) / first_sum_portfolio
+            print(growth_portfolio)
 
             shp = ep.stats.sharpe_ratio(portfolio_returns, annualization=252)
             sort = ep.stats.sortino_ratio(portfolio_returns, annualization=252)
@@ -376,6 +426,7 @@ class FamaFrenchFive:
             print(f"Результат анализа портфеля по {weights_type}")
             print('********************************')
             print('Количество акций в портфеле:')
+            bb = 0
             for i in range(len(self.__tickers)):
                 x = int(b[i] // df[self.__tickers[i]][2])
                 print(f"Акций компании {self.__tickers[i]} в портфеле: {x}")
@@ -396,6 +447,8 @@ class FamaFrenchFive:
             print(f"Sharpe ratio for benchmark: {round(shp_b, 4)}")
             print(f"Sortino ratio for benchmark: {round(sort_b, 4)}")
             print(f"Max Drawdown benchmark: {round((dd_b * 100), 2)}%")
+
+            return [weights_type, round(growth_portfolio * 100, 2), round(shp, 4), round(sort, 4), round((dd * 100), 2)]
         except:
             print('Такого типа весов несуществует, попробуйте один из этих: \n'
                   'Kelly, Max Quad Util, Max Sharpe, CLA Max Sharpe ,Min Vol ,CLA Min Vol')

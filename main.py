@@ -36,10 +36,18 @@ if __name__ == "__main__":
                               Доступные значения переменной weight_type: 
                               Kelly, Max Quad Util, Max Sharpe, CLA Max Sharpe ,Min Vol ,CLA Min Vol
     """
-    assets = ['INTU', 'TXN', 'NTES', 'AEP', 'LRCX', 'PEP', 'AMAT', 'TSLA', 'CTAS', 'TCOM', 'EBAY', 'GOOG']
-    lkb = 2
+    assets = ['TXN', 'HON', 'ADSK', 'AEP', 'MU', 'PEP', 'ISRG', 'FISV']
+    lkb = 1
     bt = 'QQQ'
+    year = 2019
     tst = FamaFrenchFive(assets=assets, benchmark_ticker=bt, lookback=lkb,
-                         max_size=0.35, min_size=0)
+                         max_size=0.35, min_size=0, test_year=2017)
     tst.calculate_weights()
-    tst.portfolio_calculate('Kelly')
+    list_testers = ['Kelly', 'Max Quad Util', 'Max Sharpe', 'CLA Max Sharpe', 'Min Vol']
+    # tst.portfolio_calculate('Kelly')
+
+    res = []
+    for name in list_testers:
+        res.append(tst.portfolio_calculate(name))
+    print(res)
+
