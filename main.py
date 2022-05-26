@@ -1,4 +1,8 @@
+import utils
 from models.FamaFrench5 import FamaFrenchFive
+from empyrial import Engine, empyrial
+import pandas as pd
+import gspread as gd
 
 
 if __name__ == "__main__":
@@ -36,18 +40,28 @@ if __name__ == "__main__":
                               Доступные значения переменной weight_type: 
                               Kelly, Max Quad Util, Max Sharpe, CLA Max Sharpe ,Min Vol ,CLA Min Vol
     """
-    assets = ['TXN', 'HON', 'ADSK', 'AEP', 'MU', 'PEP', 'ISRG', 'FISV']
+    
+    assets = ['ALGN', 'PCAR', 'ANSS', 'INTC', 'LRCX', 'MDLZ', 'GOOG', 'NVDA', 'EBAY', 'BIDU', 'MELI', 'SGEN', 'MTCH', 'MAR', 'CHTR', 'VRSK']
     lkb = 1
     bt = 'QQQ'
     year = 2019
     tst = FamaFrenchFive(assets=assets, benchmark_ticker=bt, lookback=lkb,
-                         max_size=0.35, min_size=0, test_year=2017)
+                         max_size=0.35, min_size=0.0, test_year=2020)
     tst.calculate_weights()
     list_testers = ['Kelly', 'Max Quad Util', 'Max Sharpe', 'CLA Max Sharpe', 'Min Vol']
-    # tst.portfolio_calculate('Kelly')
 
-    res = []
+    gc = gd.service_account('options-349716-50a9f6e13067.json')
+    worksheet = gc.open('Тесты бэктестинга').worksheet('Бэктест 4.0')
+    n = 110
+
     for name in list_testers:
-        res.append(tst.portfolio_calculate(name))
-    print(res)
-
+        res = tst.portfolio_calculate(name)
+        cells = utils.insert_colls[res[0]]
+        print(f"insert {res[1]} into {cells[0]}{n}")
+        worksheet.update(f"{cells[0]}{n}", res[1])
+        print(f"insert {res[4]} into {cells[1]}{n}")
+        worksheet.update(f"{cells[1]}{n}", res[4])
+        print(f"insert {res[2]} into {cells[2]}{n}")
+        worksheet.update(f"{cells[2]}{n}", res[2])
+        print(f"insert {res[3]} into {cells[3]}{n}")
+        worksheet.update(f"{cells[3]}{n}", res[3])

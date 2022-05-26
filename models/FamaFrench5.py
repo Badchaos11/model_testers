@@ -24,7 +24,7 @@ pd.options.mode.chained_assignment = None
 class FamaFrenchFive:
 
     def __init__(self, assets: list, benchmark_ticker: str, lookback: int, max_size: float, min_size: float,
-                 test_year=2021, opt_delta=1, risk_free=0, budget=2e5, n_iterations=5, plot_res=False):
+                 test_year=2021, opt_delta=1, risk_free=0.008, budget=2e5, n_iterations=5, plot_res=False):
         self.__tickers = sorted(assets)
         self.__benchmark_ticker = benchmark_ticker
         self.__lookback = lookback
@@ -38,18 +38,18 @@ class FamaFrenchFive:
         self.__currencies = ['CADUSD=X', 'AUDUSD=X', 'TRYUSD=X', 'CHFUSD=X', 'MYRUSD=X', 'MXNUSD=X',
                              'GBPUSD=X', 'SGDUSD=X', 'HKDUSD=X', 'ZARUSD=X', 'ILSUSD=X', 'JPYUSD=X',
                              'RUBUSD=X', 'EURUSD=X']
-        cvxopt.coneprog.options = {'maxiters': n_iterations}
+        #cvxopt.coneprog.options = {'maxiters': n_iterations}
 
     def __load_prices(self):
         #ty = datetime.datetime.strptime(self.__test_year, "%Y-%m-%d").date()
         ed = str(self.__test_year - 1) + '-12-30'
         st = str(self.__test_year - self.__lookback) + '-01-01'
-        data = yf.download(self.__tickers, st, ed)['Close'].dropna()
+        data = yf.download(self.__tickers, st, ed)['Close']
 
         self.__data = data
 
     def __load_market_price(self):
-        market_prices = yf.download("QQQ", period="max")["Adj Close"]
+        market_prices = yf.download(self.__benchmark_ticker, period="max")["Adj Close"]
         ed = str(self.__test_year - 1) + '-12-30'
         market_prices = market_prices[:ed]
         self.__market_prices = market_prices
@@ -91,12 +91,9 @@ class FamaFrenchFive:
         self.__omega = omega
 
     def __calc_quantity(self, weight_type):
-        wgts = pd.read_csv('models/portfolio_weight_results.csv')
-        print(wgts)
+        wgts = pd.read_csv('models/portfolio_weight_results.csv').set_index('Unnamed: 0')
         wgts = wgts[weight_type]
-        print(wgts)
         weighted_budget = [self.__budget * wgts[i] for i in range(len(wgts))]
-        print(weighted_budget)
         return weighted_budget
 
     def __count_fama(self):
@@ -104,7 +101,7 @@ class FamaFrenchFive:
         ed = str(self.__test_year - 1) + '-12-30'
         st = str(self.__test_year - self.__lookback) + '-01-01'
 
-        dat = self.__data.copy()
+        dat = self.__data
         data_bench = yf.download(self.__benchmark_ticker, st, ed)['Close']
 
         data = dat.pct_change().dropna()
@@ -126,9 +123,7 @@ class FamaFrenchFive:
         bench_df['Benchmark'] = bench
 
         tiker_with_factors = ff_ratios.merge(data, how='right', on=['Date']).bfill(axis='rows')
-
         pre_Y = bench_df.merge(tiker_with_factors, how='right', on=['Date']).bfill(axis='rows')
-
         pre_Y['Mkt-RF'] = (pre_Y['Benchmark'] - pre_Y['RF']) * 100
         X = pre_Y[['Mkt-RF', 'SMB', 'HML', 'RMW', 'CMA']] / 100  # Mkt-RF =  Benchmark - RF
 
@@ -157,7 +152,9 @@ class FamaFrenchFive:
 
         for company in regression_df.columns.tolist():
             calk_df = regression_df[company]
+            print(calk_df)
             table_data_year = research_data_per_year.loc[str(self.__test_year - 1)]
+            print(table_data_year)
             try:
                 mid_pref = calk_df['Mkt-RF'] * bench_year_return + calk_df['SMB'] * table_data_year['SMB'] + calk_df[
                     'HML'] * table_data_year['HML'] + \
@@ -183,6 +180,7 @@ class FamaFrenchFive:
         self.__views = out
 
     def __calculate_black_litterman(self):
+
         delta = black_litterman.market_implied_risk_aversion(self.__market_prices)
         covar = risk_models.risk_matrix(self.__data, method='oracle_approximating')
         market_prior = black_litterman.market_implied_prior_returns(self.__mkt_caps, risk_aversion=delta,
@@ -192,7 +190,6 @@ class FamaFrenchFive:
                                  absolute_views=self.__mu, omega=self.__omega)
         rets_bl = bl.bl_returns()
         covar_bl = bl.bl_cov()
-
         self.__rets_bl = rets_bl
         self.__covar_bl = covar_bl
         self.__market_prior = market_prior
@@ -209,11 +206,11 @@ class FamaFrenchFive:
         h = matrix(0.0, (n, 1))
 
         try:
-            max_pos_size = float(self.__min_size)
+            max_pos_size = float(self.__max_size)
         except KeyError:
             max_pos_size = None
         try:
-            min_pos_size = float(self.__max_size)
+            min_pos_size = float(self.__min_size)
         except KeyError:
             min_pos_size = None
         if min_pos_size is not None:
@@ -386,9 +383,8 @@ class FamaFrenchFive:
     def portfolio_calculate(self, weights_type: str):
         ed = str(self.__test_year) + '-12-30'
         st = str(self.__test_year) + '-01-01'
-        df = yf.download(self.__tickers, st, ed, progress=False)['Close'].fillna(0)
-        print(df)
-        index_df = yf.download(self.__benchmark_ticker, st, ed, progress=False)['Close'].fillna(0)
+        df = yf.download(self.__tickers, st, ed, progress=False)['Close'].dropna()
+        index_df = yf.download(self.__benchmark_ticker, st, ed, progress=False)['Close'].dropna()
         try:
             b = self.__calc_quantity(weights_type)
             cum_benchmark_returns = index_df.pct_change().dropna().cumsum()
@@ -396,7 +392,6 @@ class FamaFrenchFive:
             for i, name in enumerate(self.__tickers):
                 if b[i] != 0:
                     for_pr[name] = df[name]
-            print(for_pr)
             portfolio_returns = for_pr.pct_change().dropna()
             portfolio_returns = portfolio_returns.mean(axis=1)
             index_returns = index_df.pct_change().dropna()
@@ -404,7 +399,6 @@ class FamaFrenchFive:
             first_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[2]))
             current_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[-1]))
             growth_portfolio = (current_sum_portfolio - first_sum_portfolio) / first_sum_portfolio
-            print(growth_portfolio)
 
             shp = ep.stats.sharpe_ratio(portfolio_returns, annualization=252)
             sort = ep.stats.sortino_ratio(portfolio_returns, annualization=252)
@@ -447,6 +441,7 @@ class FamaFrenchFive:
             print(f"Sharpe ratio for benchmark: {round(shp_b, 4)}")
             print(f"Sortino ratio for benchmark: {round(sort_b, 4)}")
             print(f"Max Drawdown benchmark: {round((dd_b * 100), 2)}%")
+            print('*******************************')
 
             return [weights_type, round(growth_portfolio * 100, 2), round(shp, 4), round(sort, 4), round((dd * 100), 2)]
         except:
