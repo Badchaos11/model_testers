@@ -40,11 +40,10 @@ if __name__ == "__main__":
                               Доступные значения переменной weight_type: 
                               Kelly, Max Quad Util, Max Sharpe, CLA Max Sharpe ,Min Vol ,CLA Min Vol
     """
-    
-    assets = ['ALGN', 'PCAR', 'ANSS', 'INTC', 'LRCX', 'MDLZ', 'GOOG', 'NVDA', 'EBAY', 'BIDU', 'MELI', 'SGEN', 'MTCH', 'MAR', 'CHTR', 'VRSK']
+
+    assets = ['ALGN', 'ANSS', 'GOOG', 'NVDA', 'INTC', 'ROST', 'SGEN', 'BKNG', 'MELI', 'BIDU', 'MAR', 'MDLZ', 'WBA', 'ASML', 'CHTR', 'FAST']
     lkb = 1
     bt = 'QQQ'
-    year = 2019
     tst = FamaFrenchFive(assets=assets, benchmark_ticker=bt, lookback=lkb,
                          max_size=0.35, min_size=0.0, test_year=2020)
     tst.calculate_weights()
@@ -52,7 +51,7 @@ if __name__ == "__main__":
 
     gc = gd.service_account('options-349716-50a9f6e13067.json')
     worksheet = gc.open('Тесты бэктестинга').worksheet('Бэктест 4.0')
-    n = 110
+    n = 122
 
     for name in list_testers:
         res = tst.portfolio_calculate(name)
@@ -65,3 +64,7 @@ if __name__ == "__main__":
         worksheet.update(f"{cells[2]}{n}", res[2])
         print(f"insert {res[3]} into {cells[3]}{n}")
         worksheet.update(f"{cells[3]}{n}", res[3])
+
+
+
+

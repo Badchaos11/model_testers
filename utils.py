@@ -6,6 +6,8 @@ insert_colls = {
     'Min Vol': ['I', 'Q', 'Y', 'AG']
 }
 
+ew = ['D', 'L', 'T', 'AB']
+
 nasdaq_list = ['AAPL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'GOOG', 'FB', 'ADBE', 'NFLX', 'CMCSA', 'CSCO', 'COST',
                'AVGO', 'PEP', 'PYPL', 'INTC', 'QCOM', 'TXN', 'INTU', 'AMD', 'TMUS', 'HON', 'AMAT', 'SBUX', 'CHTR',
                'MRNA', 'AMGN', 'ISRG', 'ADP', 'ADI', 'LRCX', 'MU', 'GILD', 'BKNG', 'MDLZ', 'CSX', 'MRVL', 'REGN',
@@ -15,11 +17,9 @@ nasdaq_list = ['AAPL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'GOOG', 'FB', 'ADBE', 'NF
                'BIDU', 'FAST', 'CPRT', 'ANSS', 'BIIB', 'DLTR', 'OKTA', 'NTES', 'PCAR', 'SGEN', 'VRSN', 'CDW', 'DOCU',
                'SIRI', 'SWKS', 'CERN', 'PDD', 'SPLK', 'INCY', 'CHKP', 'TCOM', 'PTON', 'FOXA', 'FOX', 'AZN']
 
-
-# r = ['NAS:WBA', 'NAS:BIIB', 'NAS:VRTX', 'NAS:EXC', 'NAS:LULU', 'NAS:CERN', 'NAS:ATVI', 'NAS:ILMN', 'NAS:FISV', 'NAS:NVDA', 'NAS:CHTR', 'NAS:AZN', 'NAS:GOOG', 'NAS:MELI', 'NAS:AVGO', 'NAS:SNPS']
+# r = ['NAS:WBA', 'NAS:MNST', 'NAS:EXC', 'NAS:AZN', 'NAS:GOOG', 'NAS:XEL', 'NAS:CERN', 'NAS:BIIB', 'NAS:CHTR', 'NAS:ROST', 'NAS:ATVI', 'NAS:AVGO', 'NAS:AMZN', 'NAS:AEP', 'NAS:ILMN', 'NAS:VRTX']
 #
 # for i in range(len(r)):
 #     r[i] = r[i][4:]
 #
 # print(r)
-

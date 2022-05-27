@@ -14,8 +14,7 @@ start = '2013'
 end = '2018'
 
 # Tickers of assets
-assets = ['WBA', 'BIIB', 'CSCO', 'NVDA', 'AZN', 'DLTR', 'GOOG', 'MELI',
-          'MNST', 'ADBE', 'AMZN', 'LULU', 'CERN', 'PEP', 'EXC', 'ROST']
+assets = ['QCOM', 'AZN', 'MNST', 'ROST', 'CERN', 'ORLY', 'MELI', 'CHTR', 'LULU', 'GOOG', 'VRSN', 'VRSK', 'VRTX', 'ATVI', 'AVGO', 'SBUX']
 assets = sorted(assets)
 
 # Downloading data
