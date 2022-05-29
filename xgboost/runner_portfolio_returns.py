@@ -28,7 +28,7 @@ pred_ret = []
 date_list = []
 
 
-for company in root_df.index.unique().tolist():
+for company in sorted(root_df.index.unique().tolist()):
     print('*' * 50)
     print(company)
     for year in range(5):

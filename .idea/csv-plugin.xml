@@ -10,13 +10,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\models\F-F_Research_Data_5_Factors_2x3_daily.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\models\portfolio_weight_results.csv">
           <value>
             <Attribute>
@@ -24,7 +17,21 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\portfolio_weight_results.csv">
+        <entry key="\xgboost\Test_XGB_Run.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\xgboost\Test_XGB_Run_1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\xgboost\Test_XGB_Run_With_Overincome.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
