@@ -14,7 +14,7 @@ start = '2013'
 end = '2018'
 
 # Tickers of assets
-assets = ['QCOM', 'AZN', 'MNST', 'ROST', 'CERN', 'ORLY', 'MELI', 'CHTR', 'LULU', 'GOOG', 'VRSN', 'VRSK', 'VRTX', 'ATVI', 'AVGO', 'SBUX']
+assets = ['MAR', 'ASML', 'DFS', 'WU', 'KMX', 'PFG', 'LEG', 'LULU', 'AXP', 'CTRA', 'CSX', 'AVGO', 'PPG', 'CF', 'COF', 'FCX', 'ETN', 'SIVB', 'ZBRA', 'WDC', 'PKG', 'SYK', 'AMP', 'NSC', 'WMB', 'NEM', 'MSCI', 'EMN', 'CERN', 'LYV', 'RMD', 'CMG', 'RHI', 'GS', 'FLT', 'PH']
 assets = sorted(assets)
 
 # Downloading data
@@ -27,7 +27,7 @@ Y = data.pct_change().dropna()
 test_df = pd.DataFrame()
 
 
-def backtest(stock, weights, bench='QQQ', start_date='2018-01-01', end_date='2018-12-30'):
+def backtest(stock, weights, bench='QQQ', start_date='2017-01-01', end_date='2017-12-30'):
 
     if len(stock) > 1:
         assets_prices = yf.download(stock, start_date, end_date, progress=False)['Close']

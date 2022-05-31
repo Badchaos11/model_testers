@@ -24,7 +24,7 @@ pd.options.mode.chained_assignment = None
 class FamaFrenchFive:
 
     def __init__(self, assets: list, benchmark_ticker: str, lookback: int, max_size: float, min_size: float,
-                 test_year=2021, opt_delta=1, risk_free=0.008, budget=2e5, n_iterations=5, plot_res=False):
+                 test_year=2021, opt_delta=2, risk_free=0.008, budget=2e5, n_iterations=5, plot_res=False):
         self.__tickers = sorted(assets)
         self.__benchmark_ticker = benchmark_ticker
         self.__lookback = lookback
@@ -152,9 +152,7 @@ class FamaFrenchFive:
 
         for company in regression_df.columns.tolist():
             calk_df = regression_df[company]
-            print(calk_df)
             table_data_year = research_data_per_year.loc[str(self.__test_year - 1)]
-            print(table_data_year)
             try:
                 mid_pref = calk_df['Mkt-RF'] * bench_year_return + calk_df['SMB'] * table_data_year['SMB'] + calk_df[
                     'HML'] * table_data_year['HML'] + \
@@ -240,7 +238,10 @@ class FamaFrenchFive:
                                    weight_bounds=(self.__min_size, self.__max_size))
             ef.max_quadratic_utility(delta)
             ret, sigma, __ = ef.portfolio_performance()
+            print(f"ret and weights for delta {delta}")
+            print(ret)
             weights_vec = ef.clean_weights()
+            print(weights_vec)
             returns.append(ret)
             sigmas.append(sigma)
             deltas.append(delta)

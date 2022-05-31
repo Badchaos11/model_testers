@@ -12,7 +12,7 @@ def backtester(tickers, year):
     end = f"{year}-12-30"
 
     df = yf.download(tickers, start, end)['Close'].dropna()
-    index_df = yf.download('QQQ', start, end)['Close'].dropna()
+    index_df = yf.download('^STI', start, end)['Close'].dropna()
 
     budget = 200000
     b = []
@@ -74,9 +74,9 @@ def backtester(tickers, year):
 gc = gd.service_account('../options-349716-50a9f6e13067.json')
 worksheet = gc.open('Тесты бэктестинга').worksheet('Бэктест 4.0')
 
-asts = ['QCOM', 'AZN', 'MNST', 'ROST', 'CERN', 'ORLY', 'MELI', 'CHTR', 'LULU', 'GOOG', 'VRSN', 'VRSK', 'VRTX', 'ATVI', 'AVGO', 'SBUX']
-m = 126
-res = backtester(asts, year=2018)
+asts = ['D05.SI', 'N2IU.SI', 'A17U.SI', 'S63.SI', 'BN4.SI']
+m = 152
+res = backtester(asts, year=2017)
 print(f"insert {res[0]} into {ew[0]}{m}")
 worksheet.update(f"{ew[0]}{m}", res[0])
 print(f"insert {res[3]} into {ew[1]}{m}")

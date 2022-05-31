@@ -33,6 +33,9 @@ def backtester(tickers, year, initial_year):
     if end[5:] == '02-29':
         print('Fail to load data')
         return None
+    elif end == start:
+        print('Failed to load data')
+        return None
 
     df = yf.download(tickers, start, end)['Close'].dropna()
     index_df = yf.download('QQQ', start, end)['Close'].dropna()
@@ -43,10 +46,13 @@ def backtester(tickers, year, initial_year):
         b.append(budget * 1/(len(tickers)))
 
     cum_benchmark_returns = index_df.pct_change().dropna().cumsum()
-
-    first_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[2]))
-    current_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[-1]))
-    growth_portfolio = (current_sum_portfolio - first_sum_portfolio) / first_sum_portfolio
+    try:
+        first_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[2]))
+        current_sum_portfolio = sum((np.array(b) // np.array(df.iloc[2])) * np.array(df.iloc[-1]))
+        growth_portfolio = (current_sum_portfolio - first_sum_portfolio) / first_sum_portfolio
+    except:
+        print('Failed to calc returns')
+        return None
 
     portfolio_returns = df.pct_change().dropna()
     portfolio_returns = portfolio_returns.mean(axis=1)
@@ -91,7 +97,7 @@ def xg_running(year):
     index_ret = []
     companies = []
     a = 0
-    for i in range(0, 366):
+    for i in range(0, 365):
         date_b_predict = year_date - timedelta(days=1) + timedelta(days=i)
         date_b_predict = datetime.strftime(date_b_predict, '%Y-%m-%d')
         company_list = []
@@ -205,9 +211,9 @@ def xg_running(year):
     res_df['Portfolio Returns'] = ret_res
     res_df['Index Returns'] = index_ret
     res_df = res_df.set_index('Date')
-    res_df.to_csv('Test_XGB_Run.csv')
+    res_df.to_csv(f'_XGB_Run_Daily_{year}.csv')
     print(res_df)
     print(datetime.now())
 
 
-xg_running(2021)
+xg_running(2019)

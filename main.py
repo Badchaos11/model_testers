@@ -41,29 +41,32 @@ if __name__ == "__main__":
                               Kelly, Max Quad Util, Max Sharpe, CLA Max Sharpe ,Min Vol ,CLA Min Vol
     """
 
-    assets = ['ALGN', 'ANSS', 'GOOG', 'NVDA', 'INTC', 'ROST', 'SGEN', 'BKNG', 'MELI', 'BIDU', 'MAR', 'MDLZ', 'WBA', 'ASML', 'CHTR', 'FAST']
+    assets = ['INTU', 'TXN', 'NTES', 'AEP', 'LRCX', 'PEP', 'AMAT', 'TSLA', 'CTAS', 'TCOM', 'EBAY', 'GOOG', 'CTSH', 'AMGN', 'MTCH', 'CMCSA']
     lkb = 1
     bt = 'QQQ'
     tst = FamaFrenchFive(assets=assets, benchmark_ticker=bt, lookback=lkb,
-                         max_size=0.35, min_size=0.0, test_year=2020)
+                         max_size=0.35, min_size=0.0, test_year=2021)
     tst.calculate_weights()
     list_testers = ['Kelly', 'Max Quad Util', 'Max Sharpe', 'CLA Max Sharpe', 'Min Vol']
 
-    gc = gd.service_account('options-349716-50a9f6e13067.json')
-    worksheet = gc.open('Тесты бэктестинга').worksheet('Бэктест 4.0')
-    n = 122
-
-    for name in list_testers:
-        res = tst.portfolio_calculate(name)
-        cells = utils.insert_colls[res[0]]
-        print(f"insert {res[1]} into {cells[0]}{n}")
-        worksheet.update(f"{cells[0]}{n}", res[1])
-        print(f"insert {res[4]} into {cells[1]}{n}")
-        worksheet.update(f"{cells[1]}{n}", res[4])
-        print(f"insert {res[2]} into {cells[2]}{n}")
-        worksheet.update(f"{cells[2]}{n}", res[2])
-        print(f"insert {res[3]} into {cells[3]}{n}")
-        worksheet.update(f"{cells[3]}{n}", res[3])
+    # gc = gd.service_account('options-349716-50a9f6e13067.json')
+    # worksheet = gc.open('Тесты бэктестинга').worksheet('Бэктест 4.0')
+    # n = 156
+    #
+    # for name in list_testers:
+    #     res = tst.portfolio_calculate(name)
+    #     try:
+    #         cells = utils.insert_colls[res[0]]
+    #         print(f"insert {res[1]} into {cells[0]}{n}")
+    #         worksheet.update(f"{cells[0]}{n}", res[1])
+    #         print(f"insert {res[4]} into {cells[1]}{n}")
+    #         worksheet.update(f"{cells[1]}{n}", res[4])
+    #         print(f"insert {res[2]} into {cells[2]}{n}")
+    #         worksheet.update(f"{cells[2]}{n}", res[2])
+    #         print(f"insert {res[3]} into {cells[3]}{n}")
+    #         worksheet.update(f"{cells[3]}{n}", res[3])
+    #     except TypeError:
+    #         print(f'Для данного портфолио не рассчитан вес по {name}')
 
 
 

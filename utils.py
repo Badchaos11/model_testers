@@ -17,9 +17,8 @@ nasdaq_list = ['AAPL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'GOOG', 'FB', 'ADBE', 'NF
                'BIDU', 'FAST', 'CPRT', 'ANSS', 'BIIB', 'DLTR', 'OKTA', 'NTES', 'PCAR', 'SGEN', 'VRSN', 'CDW', 'DOCU',
                'SIRI', 'SWKS', 'CERN', 'PDD', 'SPLK', 'INCY', 'CHKP', 'TCOM', 'PTON', 'FOXA', 'FOX', 'AZN']
 
-# r = ['NAS:WBA', 'NAS:MNST', 'NAS:EXC', 'NAS:AZN', 'NAS:GOOG', 'NAS:XEL', 'NAS:CERN', 'NAS:BIIB', 'NAS:CHTR', 'NAS:ROST', 'NAS:ATVI', 'NAS:AVGO', 'NAS:AMZN', 'NAS:AEP', 'NAS:ILMN', 'NAS:VRTX']
+# r = ['SGX:D05', 'SGX:N2IU', 'SGX:A17U', 'SGX:S63', 'SGX:BN4']
 #
 # for i in range(len(r)):
-#     r[i] = r[i][4:]
-#
+#     r[i] = r[i][4:] + '.SI'
 # print(r)
