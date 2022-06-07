@@ -1,8 +1,0 @@
-Date,Portfolio,Portfolio Returns,Index Returns
-2021-01-01,"['MTCH', 'AMGN', 'JD', 'CTSH', 'GOOG', 'EBAY', 'TCOM', 'CTAS', 'TSLA', 'AMAT', 'PEP', 'LRCX', 'AEP', 'NTES', 'TXN', 'INTU']",78.34,45.35
-2021-01-03,"['ADP', 'CTAS', 'JD', 'MTCH', 'CMCSA', 'GOOG', 'EBAY', 'CTSH', 'NTES', 'AMAT', 'TSLA', 'PEP', 'LRCX', 'INTU', 'AEP', 'TXN']",79.8,43.68
-2021-01-04,"['ADI', 'GOOG', 'CTAS', 'JD', 'NTES', 'EBAY', 'ASML', 'MTCH', 'PEP', 'AEP', 'LRCX', 'AMAT', 'INTU', 'TSLA', 'CMCSA', 'TXN']",80.33,44.59
-2021-01-07,"['CTSH', 'ADI', 'INTU', 'EBAY', 'NTES', 'JD', 'MTCH', 'TCOM', 'AEP', 'AMAT', 'CMCSA', 'LRCX', 'TSLA', 'COST', 'CTAS', 'TXN']",78.07,41.98
-2021-01-08,"['INTU', 'NTES', 'GOOG', 'CTSH', 'JD', 'MTCH', 'TSLA', 'AMAT', 'AEP', 'EBAY', 'CMCSA', 'LRCX', 'COST', 'PEP', 'CTAS', 'TXN']",85.7,44.41
-2021-01-09,"['GOOG', 'ADI', 'ADP', 'NTES', 'JD', 'TSLA', 'DLTR', 'AEP', 'AMAT', 'COST', 'LRCX', 'CMCSA', 'EBAY', 'CTAS', 'PEP', 'TXN']",86.23,44.94
-2021-01-10,"['AMD', 'COST', 'ADP', 'ADI', 'CTSH', 'NTES', 'GOOG', 'JD', 'AEP', 'AMAT', 'TSLA', 'LRCX', 'CTAS', 'EBAY', 'TXN', 'PEP']",85.61,44.1
