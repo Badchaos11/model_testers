@@ -410,14 +410,6 @@ class FamaFrenchFive:
             dd = ep.stats.max_drawdown(portfolio_returns)
             dd_b = ep.stats.max_drawdown(index_returns)
 
-            """
-            cumprod_ret = ((df * quantity).sum(axis=1).pct_change().dropna() + 1).cumprod() * 100
-            cumprod_market_ret = (index_df.pct_change().dropna() + 1).cumprod() * 100
-            cumprod_ret.index = pd.to_datetime(cumprod_ret.index)
-            trough_index = (np.maximum.accumulate(cumprod_ret) - cumprod_ret).idxmax()
-            peak_index = cumprod_ret.loc[:trough_index].idxmax()
-            maximum_drawdown = 100 * (cumprod_ret[trough_index] - cumprod_ret[peak_index]) / cumprod_ret[peak_index]
-            """
             print(f"Результат анализа портфеля по {weights_type}")
             print('********************************')
             print('Количество акций в портфеле:')
